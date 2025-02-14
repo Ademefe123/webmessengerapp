@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Mesajlaşma Uygulaması</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #1877f2;
+        }
+        .admin-login {
+            max-width: 300px;
+            margin: 50px auto;
+        }
+        .admin-panel {
+            display: none;
+            padding: 20px;
+        }
+        .user-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #1877f2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            margin: 10px 0;
+        }
+        input {
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .chat-viewer {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .messages-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            background: white;
+        }
+        .message-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: #f0f2f5;
+        }
+        .message-sender {
+            font-weight: bold;
+            color: #1877f2;
+        }
+        .message-time {
+            color: #666;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .user-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .delete-message {
+            color: #dc3545;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .conversation-actions {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+        .actions-container {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .message-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        .message-file {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f0f2f5;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        .message-video {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin: 5px 0;
+        }
+        .file-icon {
+            font-size: 24px;
+        }
+        .file-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="admin-login" class="admin-login">
+            <h1>Admin Girişi</h1>
+            <form id="admin-form" onsubmit="adminLogin(event)">
+                <input type="password" id="admin-password" placeholder="Admin şifresi" required>
+                <button type="submit">Giriş</button>
+                <p id="login-error" style="color: red;"></p>
+            </form>
+        </div>
+
+        <div id="admin-panel" class="admin-panel">
+            <h1>Admin Panel</h1>
+            <div class="user-list">
+                <h2>Kullanıcılar</h2>
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>Kullanıcı Adı</th>
+                            <th>Şifre (Hash)</th>
+                            <th>Ham Şifre</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button onclick="clearChat()" class="delete-btn">Sohbeti Temizle</button>
+
+            <div class="chat-viewer">
+                <h2>Sohbet Görüntüleyici</h2>
+                <div class="user-selector">
+                    <select id="user1"></select>
+                    <select id="user2"></select>
+                    <button onclick="viewConversation()">Sohbeti Göster</button>
+                </div>
+                <div class="conversation-actions">
+                    <button onclick="deleteConversation()" class="delete-btn">Seçili Sohbeti Sil</button>
+                </div>
+                <div id="conversation" class="messages-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function adminLogin(event) {
+            event.preventDefault(); // Form submit'i engelle
+            
+            try {
+                const password = document.getElementById('admin-password').value;
+                if (!password) {
+                    document.getElementById('login-error').textContent = 'Şifre gerekli!';
+                    return;
+                }
+
+                console.log('Admin giriş denemesi...'); // Debug log
+
+                const response = await fetch('/admin/login', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+
+                console.log('Sunucu yanıtı:', response.status); // Debug log
+
+                const data = await response.json();
+                console.log('Sunucu veri:', data); // Debug log
+
+                if (data.success) {
+                    document.getElementById('admin-login').style.display = 'none';
+                    document.getElementById('admin-panel').style.display = 'block';
+                    await loadUsers();
+                } else {
+                    document.getElementById('login-error').textContent = data.error || 'Hatalı şifre!';
+                }
+            } catch (error) {
+                console.error('Admin giriş hatası:', error);
+                document.getElementById('login-error').textContent = 'Bağlantı hatası: ' + error.message;
+            }
+        }
+
+        async function loadUsers() {
+            const response = await fetch('/admin/users');
+            const users = await response.json();
+            const tbody = document.querySelector('#users-table tbody');
+            const user1Select = document.getElementById('user1');
+            const user2Select = document.getElementById('user2');
+            
+            // Tabloyu güncelle
+            tbody.innerHTML = '';
+            user1Select.innerHTML = '<option value="">Kullanıcı Seç</option>';
+            user2Select.innerHTML = '<option value="">Kullanıcı Seç</option>';
+            
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.username}</td>
+                    <td>${user.password}</td>
+                    <td>${user.originalPassword || '(bilinmiyor)'}</td>
+                    <td>
+                        <button onclick="deleteUser('${user.username}')" class="delete-btn">Sil</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                // Select'lere kullanıcıları ekle
+                const option = document.createElement('option');
+                option.value = user.username;
+                option.textContent = user.username;
+                user1Select.appendChild(option.cloneNode(true));
+                user2Select.appendChild(option.cloneNode(true));
+            });
+        }
+
+        async function deleteUser(username) {
+            if (confirm(`${username} kullanıcısını silmek istediğinize emin misiniz?`)) {
+                try {
+                    const response = await fetch(`/admin/users/${username}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert('Kullanıcı silindi!');
+                        await loadUsers();
+                    }
+                } catch (error) {
+                    alert('Kullanıcı silinirken hata oluştu!');
+                }
+            }
+        }
+
+        function formatTime(date) {
+            return new Date(date).toLocaleString('tr-TR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        async function viewConversation() {
+            const user1 = document.getElementById('user1').value;
+            const user2 = document.getElementById('user2').value;
+            
+            if (!user1 || !user2) {
+                alert('Lütfen iki kullanıcı seçin!');
+                return;
+            }
+
+            try {
+                console.log(`Sohbet yükleniyor: ${user1} - ${user2}`);
+                const response = await fetch(`/admin/messages/${user1}/${user2}`);
+                const messages = await response.json();
+                console.log(`${messages.length} mesaj bulundu`);
+                
+                const conversationDiv = document.getElementById('conversation');
+                conversationDiv.innerHTML = '';
+
+                messages.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message-item';
+                    
+                    let content = '';
+                    
+                    // Dosya içeriğini kontrol et
+                    if (msg.file) {
+                        if (msg.fileType && msg.fileType.startsWith('image/')) {
+                            content = `<img src="${msg.file}" class="message-image" onclick="window.open('${msg.file}', '_blank')">`;
+                        } else if (msg.fileType && msg.fileType.startsWith('video/')) {
+                            content = `<video src="${msg.file}" class="message-video" controls></video>`;
+                        } else {
+                            const fileName = msg.file.split('/').pop();
+                            content = `
+                                <div class="message-file" onclick="window.open('${msg.file}', '_blank')">
+                                    <span class="file-icon">📄</span>
+                                    <span class="file-name">${fileName}</span>
+                                </div>
+                            `;
+                        }
+                    } else if (msg.image) { // Eski format uyumluluğu için
+                        content = `<img src="${msg.image}" class="message-image" onclick="window.open('${msg.image}', '_blank')">`;
+                    }
+                    
+                    messageDiv.innerHTML = `
+                        <span class="message-sender">${msg.from}:</span>
+                        ${msg.message || ''}
+                        ${content}
+                        <span class="message-time">${formatTime(msg.timestamp)}</span>
+                        <i class="delete-message" onclick="deleteMessage('${msg.id}')" title="Mesajı Sil">🗑️</i>
+                    `;
+                    
+                    conversationDiv.appendChild(messageDiv);
+                });
+
+                // Scroll to bottom
+                conversationDiv.scrollTop = conversationDiv.scrollHeight;
+            } catch (error) {
+                console.error('Sohbet yükleme hatası:', error);
+                alert('Sohbet yüklenirken hata oluştu!');
+            }
+        }
+
+        async function deleteMessage(messageId) {
+            if (confirm('Bu mesajı silmek istediğinize emin misiniz?')) {
+                try {
+                    const response = await fetch(`/admin/messages/${messageId}`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        viewConversation(); // Sohbeti yenile
+                    }
+                } catch (error) {
+                    alert('Mesaj silinirken hata oluştu!');
+                }
+            }
+        }
+
+        async function deleteConversation() {
+            const user1 = document.getElementById('user1').value;
+            const user2 = document.getElementById('user2').value;
+            
+            if (!user1 || !user2) {
+                alert('Lütfen iki kullanıcı seçin!');
+                return;
+            }
+
+            if (confirm('Bu iki kullanıcı arasındaki tüm sohbeti silmek istediğinize emin misiniz?')) {
+                try {
+                    const response = await fetch(`/admin/conversations/${user1}/${user2}`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        document.getElementById('conversation').innerHTML = '';
+                        alert('Sohbet başarıyla silindi!');
+                    }
+                } catch (error) {
+                    alert('Sohbet silinirken hata oluştu!');
+                }
+            }
+        }
+
+        async function clearChat() {
+            if (confirm('Tüm sohbet geçmişini silmek istediğinize emin misiniz?')) {
+                await fetch('/admin/clear-chat', { method: 'POST' });
+                alert('Sohbet geçmişi temizlendi!');
+            }
+        }
+    </script>
+</body>
+</html>

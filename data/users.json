@@ -1,0 +1,34 @@
+[
+  {
+    "username": "Nisamülmülk",
+    "password": "$2a$10$HS/GYEojq0CDSAGMDjGnau1o3XpBGSFHrtTJ1c1TMhTVY1WDZsxym",
+    "originalPassword": "123456"
+  },
+  {
+    "username": "Adem",
+    "password": "$2a$10$Z7AOfAUDv2/1XiFAOPxxweOnNjAG/je/yitNPmkLh33npr8AOj9ly",
+    "originalPassword": "12345",
+    "profilePhoto": "http://192.168.1.118:3000/uploads/1739545639413-Screenshot%202025-02-13%20213506.png"
+  },
+  {
+    "username": "Adem1",
+    "password": "$2a$10$DUJcImxK5nrNWA2L1svzHuTenF16J4IHFpyiBZzPV7EaXPzaAu9cC",
+    "originalPassword": "5541"
+  },
+  {
+    "username": "İsmail ",
+    "password": "$2a$10$zhlNkmO.4vrme5wCQmztau6rS7ro8Ona.gWnzMrAAkphbOYeH4V56",
+    "originalPassword": "6037"
+  },
+  {
+    "username": "Adem Efe",
+    "password": "$2a$10$nBoQ0Pl.AWwJQdob3/1Q6ORzfSCCArtNNi8DiRUVczBWz8jHE7i0W",
+    "originalPassword": "123456789"
+  },
+  {
+    "username": "YAVUZ",
+    "password": "$2a$10$ENo6lc0oKTaaH2j5lbLoueQc7mnbJ2NfvzvnxJ6us1.zCTZzJBydC",
+    "originalPassword": "6545",
+    "profilePhoto": "http://localhost:3000/uploads/1739474251681-Screenshot%202025-01-29%20201306.png"
+  }
+]

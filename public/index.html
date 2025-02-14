@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesajlaşma Uygulaması</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            max-width: 100%;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            color: #1877f2;
+            text-align: center;
+        }
+        #messages {
+            list-style-type: none;
+            padding: 0;
+            margin-bottom: 60px;
+        }
+        #messages li {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+            margin: 10px 0;
+            padding: 0; /* Padding'i kaldır */
+            background: none; /* Arka plan rengini kaldır */
+            box-shadow: none; /* Gölgeyi kaldır */
+        }
+        #messages li.sent {
+            margin-left: auto;
+            align-items: flex-end;
+        }
+        #messages li.received {
+            align-items: flex-start;
+        }
+        .message-bubble {
+            padding: 10px 15px;
+            border-radius: 15px;
+            background-color: #e7f3ff;
+            margin: 2px 0;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Gölgeyi buraya taşı */
+            display: inline-block; /* Balonların içeriği düzgün sarması için */
+        }
+        li.sent .message-bubble {
+            background-color: #1877f2;
+            color: white;
+        }
+        .message-time {
+            font-size: 12px;
+            color: #666;
+            margin: 2px 5px;
+        }
+        .username {
+            font-weight: bold;
+            color: #1877f2;
+            margin-right: 10px;
+        }
+        .message-content {
+            color: #333;
+        }
+        #form {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #ddd;
+        }
+        .input-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #1877f2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #166fe5;
+        }
+        #username-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 300px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .chat-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 0;
+            height: 100vh;
+            width: 100%;
+        }
+        .users-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            height: 100%;
+            overflow-y: auto;
+        }
+        .user-item {
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 5px;
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .user-item:hover {
+            background: #f0f2f5;
+        }
+        .user-item.active {
+            background: #e7f3ff;
+        }
+        .user-item.online::after {
+            content: "●";
+            color: #42b72a;
+            margin-left: 5px;
+        }
+        .user-item.offline::after {
+            content: "●";
+            color: #ccc;
+            margin-left: 5px;
+        }
+        .user-item .notification {
+            background: #fa3e3e;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            margin-left: 5px;
+            display: none;
+        }
+        .messages-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        .back-button {
+            background-color: #666;
+            margin-bottom: 20px;
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+        }
+        .chat-view {
+            display: none;
+            background: #f8f9fa;
+            padding: 20px;
+            height: 100vh;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .users-view {
+            background: #f8f9fa;
+            padding: 20px;
+            height: calc(100vh - 40px); /* Yüksekliği azalttık */
+            position: relative;
+            width: 250px;
+            border-right: 1px solid #ddd;
+            padding-bottom: 80px; /* Alt kısımda buton için boşluk bıraktık */
+            box-sizing: border-box; /* Padding'in yüksekliğe dahil olması için */
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 30px; /* Alttaki mesafeyi artırdık */
+            left: 20px;
+            right: 20px;
+            width: calc(100% - 40px);
+            background-color: #dc3545;
+        }
+        #auth-container {
+            padding: 20px;
+        }
+        .chat-header {
+            max-width: 1000px;
+            margin: 0 auto 20px auto;
+            padding-top: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .chat-header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .chat-header h3 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #1877f2;
+        }
+        .message-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            display: block; /* Resmin balon içinde düzgün hizalanması için */
+        }
+        .image-upload {
+            display: none;
+        }
+        .upload-btn {
+            padding: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #1877f2;
+            font-size: 20px;
+        }
+        .input-container {
+            display: flex;
+            align-items: center;
+        }
+        .message-file {
+            max-width: 200px;
+            padding: 10px;
+            background: #f0f2f5;
+            border-radius: 10px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .file-icon {
+            font-size: 24px;
+        }
+        .file-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .message-video {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin: 5px 0;
+        }
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #1877f2;
+        }
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1002;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+        }
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .profile-photo {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+        .user-item {
+            display: flex;
+            align-items: center;
+        }
+        .profile-photo-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 10px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="auth-container">
+            <h1>Mesajlaşma Uygulaması</h1>
+            <div class="auth-form">
+                <input type="text" id="auth-username" placeholder="Kullanıcı adı" />
+                <input type="password" id="auth-password" placeholder="Şifre" />
+                <button onclick="register()">Kayıt Ol</button>
+                <button onclick="login()">Giriş Yap</button>
+                <div id="auth-error" class="error-message"></div>
+            </div>
+        </div>
+        <div id="chat-container" style="display: none;">
+            <div class="chat-layout">
+                <div class="users-view">
+                    <h2>Kişiler</h2>
+                    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+                    <div id="users-list"></div>
+                    <button onclick="logout()" class="logout-btn">Çıkış Yap</button>
+                </div>
+
+                <!-- Ayarlar Modal -->
+                <div class="modal-backdrop" id="settings-backdrop"></div>
+                <div class="settings-modal" id="settings-modal">
+                    <h2>Ayarlar</h2>
+                    <form class="settings-form" onsubmit="saveSettings(event)">
+                        <div>
+                            <label>Profil Fotoğrafı</label>
+                            <input type="file" accept="image/*" onchange="previewProfilePhoto(event)">
+                            <img id="profile-photo-preview" class="profile-photo-preview" src="/uploads/default-avatar.png">
+                        </div>
+                        <div>
+                            <label>Kullanıcı Adı</label>
+                            <input type="text" id="new-username">
+                        </div>
+                        <div>
+                            <label>Mevcut Şifre</label>
+                            <input type="password" id="old-password">
+                        </div>
+                        <div>
+                            <label>Yeni Şifre</label>
+                            <input type="password" id="new-password">
+                        </div>
+                        <button type="submit">Kaydet</button>
+                        <button type="button" onclick="closeSettings()">İptal</button>
+                    </form>
+                </div>
+                <div class="chat-view">
+                    <button class="back-button" onclick="showUsersList()">← Geri</button>
+                    <div class="chat-header">
+                        <img id="chat-user-photo" src="/uploads/default-avatar.png" alt="Profil">
+                        <h3 id="chat-header"></h3>
+                    </div>
+                    <div class="messages-container">
+                        <ul id="messages"></ul>
+                    </div>
+                    <form id="form" action="">
+                        <div class="input-container">
+                            <button type="button" class="upload-btn" onclick="document.getElementById('file-upload').click()">📎</button>
+                            <input type="file" id="file-upload" class="image-upload" accept="image/*,video/*,application/*" onchange="handleFileUpload(event)">
+                            <input id="input" autocomplete="off" placeholder="Mesajınızı yazın..." />
+                            <button>Gönder</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let username = '';
+        let selectedUser = null;
+        const notifications = new Map();
+
+        async function register() {
+            try {
+                const usernameValue = document.getElementById('auth-username').value;
+                const passwordValue = document.getElementById('auth-password').value;
+                
+                if (!usernameValue || !passwordValue) {
+                    document.getElementById('auth-error').textContent = 'Kullanıcı adı ve şifre gereklidir!';
+                    return;
+                }
+
+                console.log('Sending register request...'); // Debug için
+
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: usernameValue,
+                        password: passwordValue
+                    })
+                });
+
+                console.log('Register response status:', response.status); // Debug için
+
+                const data = await response.json();
+                console.log('Register response data:', data);
+
+                if (data.success) {
+                    await login();
+                } else {
+                    document.getElementById('auth-error').textContent = data.error || 'Kayıt başarısız!';
+                }
+            } catch (error) {
+                console.error('Register error:', error);
+                document.getElementById('auth-error').textContent = 'Sunucu hatası: ' + error.message;
+            }
+        }
+
+        async function login() {
+            try {
+                const usernameValue = document.getElementById('auth-username').value;
+                const passwordValue = document.getElementById('auth-password').value;
+
+                if (!usernameValue || !passwordValue) {
+                    document.getElementById('auth-error').textContent = 'Kullanıcı adı ve şifre gereklidir!';
+                    return;
+                }
+
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: usernameValue,
+                        password: passwordValue
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Login response:', data); // Debug için
+
+                if (data.success) {
+                    await loginSuccess(usernameValue);
+                } else {
+                    document.getElementById('auth-error').textContent = data.error || 'Giriş başarısız!';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                document.getElementById('auth-error').textContent = 'Sunucu hatası: ' + error.message;
+            }
+        }
+
+        async function loginSuccess(usernameValue) {
+            username = usernameValue;
+            // Oturum bilgisini kaydet
+            localStorage.setItem('chatUsername', username);
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('chat-container').style.display = 'block';
+            socket.emit('user_connected', username);
+        }
+
+        function logout() {
+            if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+                localStorage.removeItem('chatUsername');
+                window.location.reload();
+            }
+        }
+
+        // Sayfa yüklendiğinde oturum kontrolü
+        window.addEventListener('load', async () => {
+            const savedUsername = localStorage.getItem('chatUsername');
+            if (savedUsername) {
+                username = savedUsername;
+                document.getElementById('auth-container').style.display = 'none';
+                document.getElementById('chat-container').style.display = 'block';
+                socket.emit('user_connected', username);
+                console.log(`Oturum bulundu: ${username}`);
+            }
+        });
+
+        async function loadOldMessages() {
+            const response = await fetch('/messages');
+            const messages = await response.json();
+            messages.forEach(msg => {
+                addMessageToUI(msg);
+            });
+        }
+
+        function formatTime(date) {
+            return new Date(date).toLocaleTimeString('tr-TR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const messageData = {
+                        from: username,
+                        to: selectedUser,
+                        message: '',
+                        image: data.path
+                    };
+                    socket.emit('private_message', messageData);
+                }
+            } catch (error) {
+                console.error('Resim yükleme hatası:', error);
+                alert('Resim yüklenirken hata oluştu!');
+            }
+
+            // Input'u temizle
+            event.target.value = '';
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            console.log('Yüklenecek dosya:', file); // Debug log
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Upload response:', data); // Debug log
+
+                if (data.success) {
+                    const messageData = {
+                        from: username,
+                        to: selectedUser,
+                        message: '',
+                        file: data.path,
+                        fileType: data.fileType
+                    };
+                    console.log('Gönderilecek mesaj:', messageData); // Debug log
+                    socket.emit('private_message', messageData);
+                } else {
+                    throw new Error(data.error || 'Dosya yükleme başarısız');
+                }
+            } catch (error) {
+                console.error('Dosya yükleme hatası:', error);
+                alert('Dosya yüklenirken hata oluştu: ' + error.message);
+            }
+
+            event.target.value = '';
+        }
+
+        function addMessageToUI(data) {
+            console.log('UI\'a eklenecek mesaj:', data); // Debug log
+
+            const item = document.createElement('li');
+            const bubble = document.createElement('div');
+            const time = document.createElement('div');
+            
+            item.className = data.from === username ? 'sent' : 'received';
+            bubble.className = 'message-bubble';
+            time.className = 'message-time';
+            
+            if (data.file) {
+                console.log('Dosya tipi:', data.fileType); // Debug log
+
+                if (data.fileType && data.fileType.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = data.file;
+                    img.className = 'message-image';
+                    img.onerror = () => {
+                        console.error('Resim yükleme hatası:', data.file);
+                        img.alt = 'Resim yüklenemedi';
+                    };
+                    img.onclick = () => window.open(data.file, '_blank');
+                    bubble.appendChild(img);
+                } else if (data.fileType && data.fileType.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = data.file;
+                    video.className = 'message-video';
+                    video.controls = true;
+                    bubble.appendChild(video);
+                } else {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'message-file';
+                    const fileName = data.file.split('/').pop();
+                    fileDiv.innerHTML = `
+                        <span class="file-icon">📄</span>
+                        <span class="file-name">${fileName}</span>
+                    `;
+                    fileDiv.onclick = () => window.open(data.file, '_blank');
+                    bubble.appendChild(fileDiv);
+                }
+            }
+            
+            if (data.message) {
+                const text = document.createElement('div');
+                text.textContent = data.message;
+                bubble.appendChild(text);
+            }
+            
+            time.textContent = formatTime(data.timestamp);
+            
+            item.appendChild(bubble);
+            item.appendChild(time);
+            messages.appendChild(item);
+
+            // Bildirimler ve scroll
+            if (data.from !== username && (!selectedUser || selectedUser !== data.from)) {
+                const notifElement = document.getElementById(`notif-${data.from}`);
+                if (notifElement) {
+                    const count = (notifications.get(data.from) || 0) + 1;
+                    notifications.set(data.from, count);
+                    notifElement.textContent = count;
+                    notifElement.style.display = 'inline';
+                }
+            }
+
+            // Sohbeti en alta kaydır
+            const messagesContainer = document.querySelector('.messages-container');
+            messagesContainer.scrollTo({
+                top: messagesContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (input.value && username && selectedUser) {
+                const messageData = {
+                    from: username,
+                    to: selectedUser,
+                    message: input.value
+                };
+                socket.emit('private_message', messageData);
+                input.value = '';
+            }
+        });
+
+        socket.on('active_users', async (activeUsers) => {
+            const usersList = document.getElementById('users-list');
+            usersList.innerHTML = '';
+            
+            // Tüm kullanıcıları getir
+            const response = await fetch('/users');
+            const allUsers = await response.json();
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            
+            allUsers.forEach(user => {
+                if (user !== username) {
+                    const div = document.createElement('div');
+                    const isOnline = activeUsers.includes(user);
+                    div.className = `user-item ${isOnline ? 'online' : 'offline'}`;
+                    
+                    const userProfile = users[user] || {};
+                    div.innerHTML = `
+                        <img src="${userProfile.profilePhoto || '/uploads/default-avatar.png'}" class="profile-photo" alt="${user}">
+                        ${user}
+                        <span class="notification" id="notif-${user}"></span>
+                    `;
+                    div.onclick = () => selectUser(user);
+                    usersList.appendChild(div);
+                }
+            });
+        });
+
+        function selectUser(user) {
+            selectedUser = user;
+            document.querySelector('.users-view').style.display = 'none';
+            document.querySelector('.chat-view').style.display = 'block';
+            document.querySelector('.back-button').style.display = 'block';
+            
+            // Kullanıcı adı ve profil fotoğrafını güncelle
+            document.getElementById('chat-header').textContent = user;
+            
+            // Profil fotoğrafını güncelle
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            const userProfile = users[user] || {};
+            document.getElementById('chat-user-photo').src = userProfile.profilePhoto || '/uploads/default-avatar.png';
+            
+            document.getElementById('messages').innerHTML = '';
+            loadPrivateMessages(user);
+            
+            // Bildirimleri temizle
+            const notifElement = document.getElementById(`notif-${user}`);
+            if (notifElement) {
+                notifications.delete(user);
+                notifElement.style.display = 'none';
+            }
+        }
+
+        async function loadPrivateMessages(otherUser) {
+            try {
+                console.log(`Mesajlar yükleniyor: ${username} - ${otherUser}`);
+                const response = await fetch(`/messages/${username}/${otherUser}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const messages = await response.json();
+                console.log(`Mesajlar alındı: ${messages.length} adet`);
+                
+                // Önce mesajları ekleyelim
+                messages.forEach(addMessageToUI);
+                
+                // Mesajlar yüklendikten sonra scrollbar'ı en alta kaydır
+                const messagesContainer = document.querySelector('.messages-container');
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            } catch (error) {
+                console.error('Mesajları yükleme hatası:', error);
+            }
+        }
+
+        function showUsersList() {
+            document.querySelector('.users-view').style.display = 'block';
+            document.querySelector('.chat-view').style.display = 'none';
+            document.querySelector('.back-button').style.display = 'none';
+            selectedUser = null;
+        }
+
+        socket.on('private_message', addMessageToUI);
+
+        // Ayarlar fonksiyonları
+        function openSettings() {
+            document.getElementById('settings-modal').style.display = 'block';
+            document.getElementById('settings-backdrop').style.display = 'block';
+            document.getElementById('new-username').value = username;
+            
+            // Mevcut profil fotoğrafını yükle
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            const userProfile = users[username];
+            if (userProfile && userProfile.profilePhoto) {
+                document.getElementById('profile-photo-preview').src = userProfile.profilePhoto;
+            }
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').style.display = 'none';
+            document.getElementById('settings-backdrop').style.display = 'none';
+        }
+
+        async function previewProfilePhoto(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('photo', file);
+
+                try {
+                    const response = await fetch('/user/profile-photo', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        document.getElementById('profile-photo-preview').src = data.path;
+                    }
+                } catch (error) {
+                    console.error('Fotoğraf yükleme hatası:', error);
+                }
+            }
+        }
+
+        async function saveSettings(event) {
+            event.preventDefault();
+            const newUsername = document.getElementById('new-username').value;
+            const oldPassword = document.getElementById('old-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const profilePhoto = document.getElementById('profile-photo-preview').src;
+
+            try {
+                const response = await fetch('/user/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        currentUsername: username,
+                        newUsername,
+                        oldPassword,
+                        newPassword,
+                        profilePhoto
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Kullanıcı adı değiştiyse oturumu güncelle
+                    if (data.user.username !== username) {
+                        username = data.user.username;
+                        localStorage.setItem('chatUsername', username);
+                    }
+
+                    // Profil fotoğrafını kaydet
+                    const users = JSON.parse(localStorage.getItem('users') || '{}');
+                    users[username] = { profilePhoto };
+                    localStorage.setItem('users', JSON.stringify(users));
+
+                    alert('Ayarlar kaydedildi!');
+                    closeSettings();
+                    window.location.reload();
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('Ayarlar kaydedilemedi:', error);
+                alert('Bir hata oluştu!');
+            }
+        }
+
+        // Socket bağlantısını kontrol et
+        socket.on('connect', () => {
+            console.log('WebSocket bağlantısı kuruldu.');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('WebSocket bağlantısı kesildi.');
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('WebSocket bağlantı hatası:', error);
+        });
+
+        socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log(`Yeniden bağlanma girişimi: ${attemptNumber}`);
+        });
+
+        socket.on('reconnect_error', (error) => {
+            console.error('Yeniden bağlanma hatası:', error);
+        });
+
+        socket.on('reconnect_failed', () => {
+            console.error('Yeniden bağlanma başarısız.');
+        });
+    </script>
+</body>
+</html>
